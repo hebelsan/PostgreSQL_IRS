@@ -1,0 +1,176 @@
+###
+#
+# PSQL Functions
+#
+###
+
+CREATE OR REPLACE FUNCTION agg_query_offsets(sec int[], query_terms int[], offsets jsonb) RETURNS JSONB AS $$
+DECLARE
+  term int := 0;
+  tmp jsonb;
+  res jsonb = '[]'::jsonb;
+BEGIN
+  FOREACH term IN ARRAY query_terms LOOP
+    tmp := getItem(offsets, array_positions(sec, term));
+    if (jsonb_array_length(tmp) != 0) then
+      res := res || ('[' || tmp::text || ']')::jsonb;
+    end if;
+  END LOOP;
+  RETURN res;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION min_dist_query_pair(sec int[], query_pair int[], offsets jsonb) RETURNS INTEGER AS $$
+DECLARE
+  offsetsA jsonb;
+  offsetsB jsonb;
+  pos1 int;
+  pos2 int;
+  min_dist int := -1;
+BEGIN
+  offsetsA := getItem(offsets, unnest(array_positions(sec, query_pair[1]))-1);
+  offsetsB := getItem(offsets, unnest(array_positions(sec, query_pair[2]))-1);
+  if (offsetsA IS NOT NULL AND offsetsB IS NOT NULL) then
+      FOR pos1 IN SELECT * FROM jsonb_array_elements(offsetsA) LOOP
+        FOR pos2 IN SELECT * FROM jsonb_array_elements(offsetsB) LOOP
+          if (min_dist = -1) then
+            min_dist = abs(pos2 - pos1);
+          end if;
+          if (min_dist > abs(pos2 - pos1)) then
+            min_dist = abs(pos2 - pos1);
+          end if;
+        END LOOP;
+      END LOOP;
+  end if;
+  RETURN min_dist;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION rank_tfidf(sec int[], query_terms int[], frequencies int[], idfs real[][]) RETURNS REAL AS $$
+DECLARE
+  term int := 0;
+  tmp jsonb;
+  tf real;
+  term_idf_pair real[];
+  t_idf real;
+  res real := 0;
+BEGIN
+  FOREACH term IN ARRAY query_terms LOOP
+   tf := getTF(frequencies, array_positions(sec, term));
+   FOREACH term_idf_pair SLICE 1 IN ARRAY idfs LOOP
+     if (cast(term_idf_pair[1] AS int) = term) then
+       t_idf = term_idf_pair[2];
+     end if;
+   END LOOP;
+   if (tf > 0) then
+     res := res + (1 + log(tf)) * t_idf;
+   end if;
+  END LOOP;
+  RETURN res;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+Test:
+SELECT rank_tfidf(Terms, ARRAY[1,2], Offsets, Idfs)
+  FROM Section,
+    (SELECT array_agg(ARRAY[TermId, Idf]) AS Idfs
+    FROM IdfView WHERE TermId = ANY(ARRAY[1,2]))
+    AS InnerIdf;
+
+
+CREATE OR REPLACE FUNCTION rank_bm25(sec int[], query_terms int[], frequencies int[], bm25idfs real[][], avg_sec_len real, len_sec int,
+k1 real default 1.7, b real default 0.75) RETURNS REAL AS $$
+DECLARE
+  term int := 0;
+  tmp jsonb;
+  tf int;
+  term_idf_pair real[];
+  t_idf real;
+  res real := 0;
+  b_ij real;
+BEGIN
+  FOREACH term IN ARRAY query_terms LOOP
+    tf := getTF(frequencies, array_positions(sec, term));
+    FOREACH term_idf_pair SLICE 1 IN ARRAY bm25idfs LOOP
+      if (cast(term_idf_pair[1] AS int) = term) then
+        t_idf = term_idf_pair[2];
+      end if;
+    END LOOP;
+    b_ij := ((K1+1) * tf) / (K1 * ((1-b) + b*(len_sec/avg_sec_len)) + tf);
+    res := res + b_ij * t_idf;
+  END LOOP;
+  RETURN res;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+Test:
+SELECT rank_bm25(Terms, ARRAY[1,2], Offsets, Idfs, AvgSecLen, NumWords)
+  FROM Section, RankVars,
+    (SELECT array_agg(ARRAY[TermId, Bm25Idf]) AS Idfs
+    FROM IdfView WHERE TermId = ANY(ARRAY[1,2]))
+    AS InnerIdf;
+
+
+SELECT SecId, SUM(((var_K1 + 1) * tf / (var_K1 * ((1- var_b) + var_b * (NumWords/AvgSecLen)) + tf) ) * Bm25Idf) AS Bm25Res
+FROM
+  (SELECT UNNEST(Terms) AS TermId, Numwords,
+   jsonb_array_length(jsonb_array_elements(Offsets)) AS tf,
+   id as secid FROM Section) AS InnerTf, IdfView, RankVars
+WHERE InnerTf.TermId = ANY(ARRAY[1,2]) AND InnerTf.TermId = IdfView.Termid
+GROUP BY SecId;
+
+
+CREATE OR REPLACE FUNCTION rank_tfidf_ext(sec int[], query_terms int[], frequencies int[], offsets jsonb, idfs real[][]) RETURNS REAL AS $$
+DECLARE
+  tfidf real;
+  t_offsets jsonb;
+  nj int;
+BEGIN
+  tfidf := rank_tfidf(sec, query_terms, frequencies, idfs);
+  t_offsets := agg_query_offsets(sec, query_terms, offsets);
+  nj := length_nested(t_offsets);
+  RETURN tfidf + ( (min_dist_tfidf(t_offsets) + min_span_tfidf(t_offsets)) / nj);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION rank_bm25_ext(sec int[], query_terms int[], offsets jsonb, frequencies int[],
+bm25idfs real[][], avg_sec_len real, len_sec int, total_num_secs bigint,
+k1 real default 1.2, b real default 0.9) RETURNS REAL AS $$
+DECLARE
+  term int := 0;
+  tmp jsonb;
+  tf int;
+  term_idf_pair real[];
+  t_idf real;
+  b_ij real;
+  bm25 real = 0;
+  t_offsets jsonb;
+  idfs_sorted real[];
+BEGIN
+  -- valc bm25
+  FOREACH term IN ARRAY query_terms LOOP
+    if term = ANY(sec) then
+      tf := getTF(frequencies, array_positions(sec, term));
+      FOREACH term_idf_pair SLICE 1 IN ARRAY bm25idfs LOOP
+        if (cast(term_idf_pair[1] AS int) = term) then
+          t_idf = term_idf_pair[2];
+          idfs_sorted = idfs_sorted || t_idf;
+        end if;
+      END LOOP;
+      b_ij := ((k1+1) * tf) / (k1 * ((1-b) + b*(len_sec/avg_sec_len)) + tf);
+      bm25 := bm25 + b_ij * t_idf;
+    end if;
+  END LOOP;
+  t_offsets := agg_query_offsets(sec, query_terms, offsets);
+  RETURN bm25 + min_dist_bm25(t_offsets, total_num_secs, len_sec, avg_sec_len, idfs_sorted);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+SELECT id, rank_bm25_ext(Terms, ARRAY[1,2], Offsets,
+Idfs, AvgSecLen, NumWords, NumSecs)
+FROM Section, RankVars,
+(SELECT array_agg(ARRAY[TermId, Bm25Idf]) AS Idfs
+FROM IdfView WHERE TermId = ANY(ARRAY[1,2]))
+AS InnerIdf;

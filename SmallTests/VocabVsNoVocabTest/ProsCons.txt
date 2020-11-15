@@ -1,0 +1,9 @@
+Pro Vocabulary:
+- doesn't need much more memory infact when using INTEGER should be smaller then without
+- Most times Int comparisons are faster than varchar comparisons, wegen Groß und Kleinschreibung Checks, but different database systems could handle this different
+- easier to maintain the idf values with vocabulary
+
+Cons:
+- Inserting and searching needs additional lookup to vocabulary and lexeme Tabelle (How much time and memory test shows)
+- Searching with "LIKE" operator is much more complicated (GIN Index improves searching with LIKE)
+- (Vocabulary is also easy retrievable when using distinct on the SectionTerm Tabelle)

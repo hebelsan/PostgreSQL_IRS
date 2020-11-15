@@ -1,0 +1,231 @@
+###
+#
+# PSQL Functions for Model A Ranking
+#
+###
+
+CREATE OR REPLACE AGGREGATE jsonb_concat_agg (jsonb)
+(
+    sfunc = jsonb_concat,
+    stype = jsonb,
+    initcond = '[]'
+);
+CREATE OR REPLACE FUNCTION getItem(json_array jsonb, indices int[]) RETURNS JSONB AS $$
+DECLARE
+i int := 0;
+index int := 0;
+item jsonb;
+items jsonb = '[]'::jsonb;
+BEGIN
+SELECT jsonb_concat_agg(value) from jsonb_array_elements(json_array) with ordinality where ordinality = ANY(indices) INTO items;
+if (jsonb_array_length(items) = 0) then
+  RETURN items;
+end if;
+RETURN items;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION getPos(json_array jsonb, index int) RETURNS int AS $$
+DECLARE
+i int := 0;
+pos int;
+BEGIN
+FOR pos IN select jsonb_array_elements_text(json_array) LOOP
+  if (i = index) then
+    RETURN pos;
+  end if;
+  i := i + 1;
+END LOOP;
+RETURN NULL;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION min_dist_tfidf(allOffsets jsonb) RETURNS REAL AS $$
+DECLARE
+  num_words int;
+  pos2 int;
+  pos1 int;
+  min_dist int := -1;
+  min_dist_sum real := 0.0;
+BEGIN
+  -- get number of words involved
+  SELECT jsonb_array_length(allOffsets) INTO num_words;
+  
+  -- check if more then one word is involved
+  if (num_words = 1) then
+    RETURN 0.0;
+  end if;
+  
+  -- loop through each word
+  FOR k IN 1..(num_words-1) LOOP
+	  FOR i IN 2..(num_words+1-k) LOOP
+	    
+      min_dist := -1;
+	    -- compare positions of each word
+	    FOR pos2 IN select jsonb_array_elements_text(getItem(allOffsets, ARRAY[k+(i-1)])) LOOP
+	      FOR pos1 IN select jsonb_array_elements_text(getItem(allOffsets, ARRAY[k])) LOOP
+	      
+	        if (min_dist = -1) then
+	          min_dist := abs(pos1 - pos2);
+	        end if;
+	       
+	        if (min_dist > abs(pos1 - pos2)) then
+	          min_dist := abs(pos1 - pos2);
+	        end if;
+
+		  END LOOP;
+	    END LOOP;
+
+	    min_dist_sum := min_dist_sum + (1.0 / (min_dist*min_dist));
+	    
+	  END LOOP;
+  END LOOP;
+  RETURN min_dist_sum;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+Test:
+select min_dist_tfidf(jsonb_agg(offsets)) from sectionterm group by sectionid;
+
+
+CREATE OR REPLACE FUNCTION generate_permutations(lists jsonb, depth int, current int[]) returns table (arrays int[][]) AS $$
+DECLARE
+num_words int;
+min_span real := 0.0;
+BEGIN
+if (depth = (jsonb_array_length(lists))) then
+  RETURN query select current;
+end if;
+
+if (depth < (jsonb_array_length(lists))) then
+  if (jsonb_array_length(getItem(lists, ARRAY[depth])) != 0) then
+  FOR i IN 0..(jsonb_array_length(getItem(lists, ARRAY[depth]))-1) LOOP
+    RETURN query select * from generate_permutations(lists, depth + 1, current || getPos(getItem(lists, ARRAY[depth]), i));
+  END LOOP;
+  end if;
+end if;
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION min_span_tfidf(allOffsets jsonb) RETURNS REAL AS $$
+DECLARE
+num_words int;
+max int;
+min int;
+min_span real := -1;
+permutation int[];
+BEGIN
+-- get number of words involved
+SELECT jsonb_array_length(allOffsets) INTO num_words;
+
+-- check if more then one word is involved
+if (num_words < 2) then
+  RETURN 0.0;
+end if;
+
+FOR permutation IN SELECT * from generate_permutations(allOffsets, 0, '{}') LOOP
+  SELECT max(x) FROM unnest(permutation) as x INTO max;
+  SELECT min(x) FROM unnest(permutation) as x INTO min;
+  
+  if (min_span = -1) then
+    min_span := max - min;
+  end if;
+  
+  if (min_span > (max - min)) then
+    min_span := max - min;
+  end if;
+END LOOP;
+
+RETURN 1.0/ ((min_span/num_words)*(min_span/num_words));
+END;
+$$ LANGUAGE plpgsql;
+
+Test:
+select sectionid, min_span_tfidf(jsonb_agg(offsets)) from sectionterm where vocabid IN (1,2) group by sectionid;
+
+
+FOR k IN 1..(num_words-1) LOOP
+	  FOR i IN 2..(num_words+1-k) LOOP
+	    
+      min_dist := -1;
+	    -- compare positions of each word
+	    FOR pos2 IN select jsonb_array_elements_text(getItem(allOffsets, ARRAY[k+(i-1)])) LOOP
+	      FOR pos1 IN select jsonb_array_elements_text(getItem(allOffsets, ARRAY[k])) LOOP
+
+
+CREATE OR REPLACE FUNCTION min_dist_bm25(allOffsets jsonb, total_num_secs bigint,
+length_sec int, avg_sec_len real, idfs real[],
+k3 real default 1000., k1 real default 1.2, alpha real default 2., b real default 0.9) RETURNS REAL AS $$
+DECLARE
+  num_words int;
+  pos2 int;
+  pos1 int;
+  dist int;
+  u real;
+  wd real;
+  min_idf real;
+  tpi real := 0;
+  result_sum real := 0.0;
+BEGIN
+  -- get number of words involved
+  SELECT jsonb_array_length(allOffsets) INTO num_words;
+  RAISE NOTICE 'num_words  %', num_words;
+  -- check if more then one word is involved
+  if (num_words < 2) then
+    RETURN 0.0;
+  end if;
+  -- precaluculate U
+  u := alpha * ( (1-b) + b*(length_sec/avg_sec_len) );
+  -- loop through offsetspairs
+  FOR k IN 1..(num_words-1) LOOP
+	  FOR i IN 2..(num_words+1-k) LOOP
+	    -- loop through termpairs in offsetspairs
+      tpi := 0;
+	    FOR pos2 IN select jsonb_array_elements_text(getItem(allOffsets, ARRAY[k+(i-1)])) LOOP
+	      FOR pos1 IN select jsonb_array_elements_text(getItem(allOffsets, ARRAY[k])) LOOP
+	        
+          dist := abs(pos1 - pos2);
+	        if (dist < 6) then
+	          tpi := tpi + (1.0 / (dist*dist));
+	        end if;
+		    END LOOP;
+	    END LOOP;
+
+        if (tpi > 0) then
+          min_idf := idfs[k+(i-1)];
+          if (idfs[k] < idfs[k+(i-1)]) then
+            min_idf := idfs[k];
+          end if;
+          RAISE NOTICE 'min_idf  %', min_idf;
+	        wd := (k1 + 1) * (tpi/(u*tpi));
+          result_sum := result_sum + (wd * (min_idf/k3));
+        end if;
+	  END LOOP;
+  END LOOP;
+  RAISE NOTICE 'result_sum  %', result_sum;
+  RETURN result_sum;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+Test:
+SELECT bm25res.SectionId, BM25,
+min_dist_bm25(offsets, NumSecs, Section.NumWords, cast(AvgSecLen as real),  BM25IDF) + BM25 AS BM25extended
+FROM
+(
+  SELECT SectionId, jsonb_agg(offsets) AS offsets, array_agg(distinct cast(BM25IDF as real)) as bm25idf,
+  SUM(
+    ( (var_K1 + 1) * array_length(Offsets, 1) /
+    (var_K1 * ((1- var_b) + var_b * (Section.NumWords/AvgSecLen)) +
+    array_length(Offsets, 1)) ) * BM25IDF
+    ) AS BM25
+    FROM SectionTerm, IdfView, RankVars, Section
+    WHERE VocabId IN (1, 2) AND VocId = VocabId AND Section.Id = SectionId
+    GROUP BY SectionId
+) as bm25res, RankVars, Section
+WHERE Section.Id = bm25res.SectionId;

@@ -1,0 +1,371 @@
+###
+#
+# PSQL Functions for Model Tsvector Ranking
+#
+###
+
+CREATE OR REPLACE FUNCTION length_nested(json_array jsonb) RETURNS INT AS $$
+DECLARE
+  num_elements int := 0;
+  i jsonb;
+  j jsonb;
+BEGIN
+  FOR i IN SELECT * FROM jsonb_array_elements(json_array) LOOP
+    FOR j IN SELECT * FROM jsonb_array_elements(i) LOOP
+      num_elements := num_elements +1;
+    END LOOP;
+  END LOOP;
+  RETURN num_elements;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION getTF(sec_id int, term text) RETURNS INTEGER AS $$
+DECLARE
+  tf int := 0;
+BEGIN
+  SELECT nentry FROM ts_stat('SELECT tsvector FROM Section WHERE id = ' || sec_id) WHERE word = term INTO tf;
+  if (tf IS NOT NULL) then
+    RETURN tf;
+  end if;
+  RETURN 0;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION getIDF(t text) RETURNS REAL AS $$
+DECLARE
+  idf_val real := 0;
+BEGIN
+  SELECT idf FROM idfview WHERE Term = t INTO idf_val;
+  if (idf_val IS NOT NULL) then
+    RETURN idf_val;
+  end if;
+  RETURN 0.0;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION getIdfBm25(t text) RETURNS REAL AS $$
+DECLARE
+  idf_val real := 0;
+BEGIN
+  SELECT bm25idf FROM idfview WHERE Term = t INTO idf_val;
+  if (idf_val IS NOT NULL) then
+    RETURN idf_val;
+  end if;
+  RETURN 0.0;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION ts_rank_tfidf(sec_id int, query_terms text[]) RETURNS REAL AS $$
+DECLARE
+  res real := 0.;
+  tf int := 0;
+  tf_log real := 0.;
+  t text;
+BEGIN
+  RAISE NOTICE 'sec_id: %', sec_id;
+  FOREACH t IN ARRAY query_terms LOOP
+    SELECT * FROM getTF(sec_id, t) INTO tf;
+    RAISE NOTICE 'tf: %', tf;
+    tf_log := 0;
+    if (tf > 0) then
+      tf_log := 1. + log(tf);
+    end if;
+    RAISE NOTICE 'tf_log: %', tf_log;
+    res := res + (tf_log * getIDF(t));
+  END LOOP;
+  RETURN res;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION ts_rank_bm25(sec_id int, query_terms text[],
+k1 real default 1.7, b real default 0.75) RETURNS REAL AS $$
+DECLARE
+  res real := 0.;
+  tf int := 0;
+  t text;
+  b_ij real;
+  len_sec int;
+  avg_sec_len real;
+BEGIN
+  SELECT AVG(NumWords) FROM Section INTO avg_sec_len;
+  SELECT NumWords FROM Section WHERE id = sec_id INTO len_sec;
+  FOREACH t IN ARRAY query_terms LOOP
+    SELECT * FROM getTF(sec_id, t) INTO tf;
+    b_ij := ((K1+1) * tf) / (K1 * ((1-b) + b*(len_sec/avg_sec_len)) + tf);
+    res := res + (b_ij * getIdfBm25(t));
+  END LOOP;
+  RETURN res;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+##
+#
+# Helper Functions for word proximity ranking
+#
+##
+
+
+CREATE OR REPLACE FUNCTION ts_getOffsets(input_tsvec tsvector, query_terms text[]) RETURNS jsonb AS $$
+DECLARE
+  t text;
+  search_lexeme tsvector;
+  occurences_pattern text;
+  occurences_list text;
+  lexeme_positions int[];
+  res jsonb = '[]'::jsonb;
+BEGIN
+  FOREACH t IN ARRAY query_terms LOOP
+    search_lexeme := strip ( to_tsvector ( 'english', t ) );
+    occurences_pattern := search_lexeme::text || ':([0-9A-D,]+)';
+    occurences_list := substring ( input_tsvec::text, occurences_pattern );
+    SELECT array_agg( REGEXP_REPLACE(a, '[A-D]', '')::int )
+      FROM regexp_split_to_table( occurences_list, ',' ) a
+      WHERE search_lexeme::text != '' INTO lexeme_positions;
+    res := res || to_jsonb(ARRAY[lexeme_positions]);
+  END LOOP;
+  RETURN res;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION generate_permutations(lists jsonb, depth int, current int[]) returns table (arrays int[][]) AS $$
+DECLARE
+num_words int;
+min_span real := 0.0;
+BEGIN
+if (depth = (jsonb_array_length(lists))) then
+  RETURN query select current;
+end if;
+if (depth < (jsonb_array_length(lists))) then
+  FOR i IN 0..(jsonb_array_length(getItem(lists, depth))-1) LOOP
+    RETURN query select * from generate_permutations(lists, depth + 1, current || getPos(getItem(lists, depth), i));
+  END LOOP;
+end if;
+END;
+$$ LANGUAGE plpgsql;
+
+
+Test:
+select ts_getOffsets(to_tsvector('english', 'my fat rat is a cat and another cat'), Array['cat', 'rat']);
+
+
+CREATE OR REPLACE FUNCTION getItem(json_array jsonb, index int) RETURNS JSONB AS $$
+DECLARE
+i int := 0;
+item jsonb;
+BEGIN
+FOR item IN SELECT * FROM jsonb_array_elements(json_array)
+LOOP
+  if (i = index) then
+    RETURN item;
+  end if;
+  i := i + 1;
+END LOOP;
+RAISE NOTICE 'getItem: no item for index %', index;
+RETURN NULL;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION getPos(json_array jsonb, index int) RETURNS int AS $$
+DECLARE
+i int := 0;
+pos int;
+BEGIN
+FOR pos IN select jsonb_array_elements_text(json_array) LOOP
+  if (i = index) then
+    RETURN pos;
+  end if;
+  i := i + 1;
+END LOOP;
+RAISE NOTICE 'getPos: no item for index %', index;
+RETURN NULL;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION min_dist_tfidf(allOffsets jsonb) RETURNS REAL AS $$
+DECLARE
+  num_words int;
+  pos2 int;
+  pos1 int;
+  min_dist int := -1;
+  min_dist_sum real := 0.0;
+BEGIN
+  -- get number of words involved
+  SELECT jsonb_array_length(allOffsets) INTO num_words;
+  -- check if more then one word is involved
+  if (num_words = 1) then
+    RETURN 0.0;
+  end if;
+  -- loop through each word
+  FOR k IN 0..(num_words-2) LOOP
+	  FOR i IN 1..(num_words-1-k) LOOP
+	    -- compare positions of each word
+	    FOR pos2 IN select jsonb_array_elements_text(getItem(allOffsets, k+i)) LOOP
+	      FOR pos1 IN select jsonb_array_elements_text(getItem(allOffsets, k)) LOOP
+	        if (min_dist = -1) then
+	          min_dist := abs(pos1 - pos2);
+	        end if;
+	        if (min_dist > abs(pos1 - pos2)) then
+	          min_dist := abs(pos1 - pos2);
+	        end if;
+		  END LOOP;
+	    END LOOP;
+	    min_dist_sum := min_dist_sum + (1.0 / (min_dist*min_dist));
+	  END LOOP;
+  END LOOP;
+  RETURN min_dist_sum;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION min_span_tfidf(allOffsets jsonb) RETURNS REAL AS $$
+DECLARE
+num_words int;
+max int;
+min int;
+min_span real := -1;
+permutation int[];
+BEGIN
+-- get number of words involved
+SELECT jsonb_array_length(allOffsets) INTO num_words;
+-- check if more then one word is involved
+if (num_words < 2) then
+  RETURN 0.0;
+end if;
+FOR permutation IN SELECT * from generate_permutations(allOffsets, 0, '{}') LOOP
+  -- RAISE NOTICE 'permutations %', permutations;
+  SELECT max(x) FROM unnest(permutation) as x INTO max;
+  SELECT min(x) FROM unnest(permutation) as x INTO min;
+  if (min_span = -1) then
+    min_span := max - min;
+  end if;
+  if (min_span > (max - min)) then
+    min_span := max - min;
+  end if;
+END LOOP;
+RETURN 1.0/ ((min_span/num_words)*(min_span/num_words));
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION min_dist_bm25(allOffsets jsonb, total_num_secs bigint,
+length_sec int, avg_sec_len real, idfs real[],
+k3 real default 1000., k1 real default 1.2, alpha real default 2., b real default 0.9) RETURNS REAL AS $$
+DECLARE
+  num_words int;
+  pos2 int;
+  pos1 int;
+  dist int;
+  u real;
+  wd real;
+  min_idf real;
+  tpi real := 0;
+  result_sum real := 0.0;
+BEGIN
+  -- get number of words involved
+  SELECT jsonb_array_length(allOffsets) INTO num_words;
+  -- check if more then one word is involved
+  if (num_words < 2) then
+    RETURN 0.0;
+  end if;
+  -- precaluculate U
+  u := alpha * ( (1-b) + b*(length_sec/avg_sec_len) );
+  -- loop through offsetspairs
+  FOR k IN 0..(num_words-2) LOOP
+	  FOR i IN 1..(num_words-1-k) LOOP
+	    -- loop through termpairs in offsetspairs
+	    FOR pos2 IN select jsonb_array_elements_text(getItem(allOffsets, k+i)) LOOP
+	      FOR pos1 IN select jsonb_array_elements_text(getItem(allOffsets, k)) LOOP
+	        
+            dist := abs(pos1 - pos2);
+	        if (dist < 6) then
+	          tpi := tpi + (1.0 / (dist*dist));
+	        end if;
+		  END LOOP;
+	    END LOOP;
+        if (tpi > 0) then
+          min_idf := idfs[k+1];
+          if (idfs[k+2] < idfs[k+1]) then
+            min_idf := idfs[k+1];
+          end if;
+          RAISE NOTICE 'idfs %', idfs;
+	      wd := (k1 + 1) * (tpi/(u*tpi));
+          result_sum := result_sum + (wd * (min_idf/k3));
+        end if;
+	    
+	  END LOOP;
+  END LOOP;
+  RETURN result_sum;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+##
+#
+# Extended Ranking Functions
+#
+##
+
+
+CREATE OR REPLACE FUNCTION ts_rank_tfidf_ext(sec_id int, query_terms text[], input_tsvec tsvector) RETURNS REAL AS $$
+DECLARE
+  res real := 0.;
+  tf int := 0;
+  tf_log real := 0.;
+  t text;
+  offsets jsonb;
+  nj int;
+BEGIN
+  RAISE NOTICE 'sec_id: %', sec_id;
+  FOREACH t IN ARRAY query_terms LOOP
+    SELECT * FROM getTF(sec_id, t) INTO tf;
+    RAISE NOTICE 'tf: %', tf;
+    tf_log := 0;
+    if (tf > 0) then
+      tf_log := 1. + log(tf);
+    end if;
+    res := res + (tf_log * getIDF(t));
+  END LOOP;
+  offsets := ts_getOffsets(input_tsvec, query_terms);
+  nj := length_nested(offsets);
+  res := res + ( (min_dist_tfidf(offsets) + min_span_tfidf(offsets)) / nj);
+  RETURN res;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+
+CREATE OR REPLACE FUNCTION ts_rank_bm25_ext(sec_id int, query_terms text[], input_tsvec tsvector,
+k3 real default 1000., k1 real default 1.2, alpha real default 2., b real default 0.9)
+RETURNS REAL AS $$
+DECLARE
+  res real := 0.;
+  tf int := 0;
+  tf_log real := 0.;
+  t text;
+  b_ij real;
+  len_sec int;
+  avg_sec_len real;
+  total_num_secs int;
+  idfs real[] = '{}';
+BEGIN
+  SELECT AVG(NumWords) FROM Section INTO avg_sec_len;
+  SELECT NumWords FROM Section WHERE id = sec_id INTO len_sec;
+  SELECT Count(*) FROM Section INTO total_num_secs;
+  FOREACH t IN ARRAY query_terms LOOP
+    SELECT * FROM getTF(sec_id, t) INTO tf;
+    tf_log := 0;
+    b_ij := ((K1+1) * tf) / (K1 * ((1-b) + b*(len_sec/avg_sec_len)) + tf);
+    res := res + (b_ij * getIdfBm25(t));
+    idfs := idfs || getIdfBm25(t);
+  END LOOP;
+  res := res + min_dist_bm25(ts_getOffsets(input_tsvec, query_terms), cast(total_num_secs AS bigint), len_sec, avg_sec_len, idfs);
+  RETURN res;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;

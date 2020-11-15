@@ -1,0 +1,285 @@
+******** 0.01 of the dataset ********
+succefully created tables!
+time: 9.33701491355896
+ENTRIES:
+TotalTerms: 397533
+VocabularyEntries: 42247
+MEMORY SIZE:
+oid, table_schema, table_name, row_estimate, total_bytes, index_bytes, toast_bytes, table_bytes, total, index, toast, table
+(20941, 'public', 'fullterm', 397533.0, 27525120, 10076160, 8192, 17440768, '26 MB', '9840 kB', '8192 bytes', '17 MB')
+(20976, 'public', 'termsec_big', 397533.0, 26607616, 8970240, None, 17637376, '25 MB', '8760 kB', None, '17 MB')
+(20973, 'public', 'termsec', 397533.0, 23412736, 8970240, None, 14442496, '22 MB', '8760 kB', None, '14 MB')
+(20962, 'public', 'vocab_big', 42247.0, 5603328, 3538944, 8192, 2056192, '5472 kB', '3456 kB', '8192 bytes', '2008 kB')
+(20949, 'public', 'vocab', 42247.0, 5455872, 3538944, 8192, 1908736, '5328 kB', '3456 kB', '8192 bytes', '1864 kB')
+QUERY SPEED:
+queryterm: ['much']
+Query Terms appears in: 441 sections
+***Speed no vocab***
+muchExecuteNoVocab: 0.9425799999999999 muchPlanningNoVocab: 0.19914399999999954
+***Speed vocab INT***
+muchExecuteVocabIntFetchId: 0.019046000000000063 muchPlanningVocabIntFetchId: 0.2178019999999999
+muchExecuteVocabIntSearch: 0.9222080000000005 muchPlanningvocabIntSearch: 0.18045400000000028
+***Speed vocab BigInt***
+muchExecuteVocabBigIntFetchId: 0.020283999999999823 muchPlanningvocabBigIntFetchId: 0.21431399999999967
+muchExecuteVocabBigIntSearch: 0.9238499999999997 muchPlanningvocabBigIntSearch: 0.17803600000000022
+QUERY SPEED:
+queryterm: ['trump']
+Query Terms appears in: 322 sections
+***Speed no vocab***
+trumpExecuteNoVocab: 0.7029779999999999 trumpPlanningNoVocab: 0.19864199999999949
+***Speed vocab INT***
+trumpExecuteVocabIntFetchId: 0.022368000000000082 trumpPlanningVocabIntFetchId: 0.21743399999999963
+trumpExecuteVocabIntSearch: 0.6802740000000002 trumpPlanningvocabIntSearch: 0.17968400000000023
+***Speed vocab BigInt***
+trumpExecuteVocabBigIntFetchId: 0.022028000000000107 trumpPlanningvocabBigIntFetchId: 0.21570599999999956
+trumpExecuteVocabBigIntSearch: 0.6881619999999989 trumpPlanningvocabBigIntSearch: 0.17847400000000035
+QUERY SPEED:
+queryterm: ['president']
+Query Terms appears in: 415 sections
+***Speed no vocab***
+presidentExecuteNoVocab: 0.8904339999999985 presidentPlanningNoVocab: 0.2010519999999997
+***Speed vocab INT***
+presidentExecuteVocabIntFetchId: 0.022110000000000084 presidentPlanningVocabIntFetchId: 0.21622799999999986
+presidentExecuteVocabIntSearch: 0.849434000000001 presidentPlanningvocabIntSearch: 0.17960600000000015
+***Speed vocab BigInt***
+presidentExecuteVocabBigIntFetchId: 0.02227400000000007 presidentPlanningvocabBigIntFetchId: 0.21397399999999972
+presidentExecuteVocabBigIntSearch: 0.8682120000000013 presidentPlanningvocabBigIntSearch: 0.17841600000000046
+QUERY SPEED:
+queryterm: ['government']
+Query Terms appears in: 444 sections
+***Speed no vocab***
+governmentExecuteNoVocab: 0.9906500000000009 governmentPlanningNoVocab: 0.21312199999999962
+***Speed vocab INT***
+governmentExecuteVocabIntFetchId: 0.023715999999999755 governmentPlanningVocabIntFetchId: 0.23317399999999947
+governmentExecuteVocabIntSearch: 0.9781160000000012 governmentPlanningvocabIntSearch: 0.19289399999999957
+***Speed vocab BigInt***
+governmentExecuteVocabBigIntFetchId: 0.025424000000000075 governmentPlanningvocabBigIntFetchId: 0.23273399999999952
+governmentExecuteVocabBigIntSearch: 0.9438059999999999 governmentPlanningvocabBigIntSearch: 0.18372200000000025
+******** 0.05 of the dataset ********
+succefully created tables!
+time: 47.81569838523865
+ENTRIES:
+TotalTerms: 2000884
+VocabularyEntries: 92482
+MEMORY SIZE:
+oid, table_schema, table_name, row_estimate, total_bytes, index_bytes, toast_bytes, table_bytes, total, index, toast, table
+(20984, 'public', 'fullterm', 2000884.0, 138313728, 50634752, 8192, 87670784, '132 MB', '48 MB', '8192 bytes', '84 MB')
+(21019, 'public', 'termsec_big', 2000884.0, 133677056, 45023232, None, 88653824, '127 MB', '43 MB', None, '85 MB')
+(21016, 'public', 'termsec', 2000884.0, 117604352, 45023232, None, 72581120, '112 MB', '43 MB', None, '69 MB')
+(21005, 'public', 'vocab_big', 92482.0, 12443648, 7938048, 8192, 4497408, '12 MB', '7752 kB', '8192 bytes', '4392 kB')
+(20992, 'public', 'vocab', 92482.0, 12115968, 7938048, 8192, 4169728, '12 MB', '7752 kB', '8192 bytes', '4072 kB')
+QUERY SPEED:
+queryterm: ['much']
+Query Terms appears in: 2364 sections
+***Speed no vocab***
+muchExecuteNoVocab: 3.492818000000001 muchPlanningNoVocab: 0.19617399999999952
+***Speed vocab INT***
+muchExecuteVocabIntFetchId: 0.02643199999999984 muchPlanningVocabIntFetchId: 0.21190199999999954
+muchExecuteVocabIntSearch: 3.2770639999999993 muchPlanningvocabIntSearch: 0.17526000000000003
+***Speed vocab BigInt***
+muchExecuteVocabBigIntFetchId: 0.024878000000000056 muchPlanningvocabBigIntFetchId: 0.20889999999999959
+muchExecuteVocabBigIntSearch: 3.0715780000000015 muchPlanningvocabBigIntSearch: 0.17522600000000024
+QUERY SPEED:
+queryterm: ['trump']
+Query Terms appears in: 1583 sections
+***Speed no vocab***
+trumpExecuteNoVocab: 2.416143999999998 trumpPlanningNoVocab: 0.19632199999999944
+***Speed vocab INT***
+trumpExecuteVocabIntFetchId: 0.027462000000000035 trumpPlanningVocabIntFetchId: 0.21837799999999982
+trumpExecuteVocabIntSearch: 2.4839760000000024 trumpPlanningvocabIntSearch: 0.1867200000000003
+***Speed vocab BigInt***
+trumpExecuteVocabBigIntFetchId: 0.028165999999999917 trumpPlanningvocabBigIntFetchId: 0.2206999999999996
+trumpExecuteVocabBigIntSearch: 2.244506000000001 trumpPlanningvocabBigIntSearch: 0.17338000000000017
+QUERY SPEED:
+queryterm: ['president']
+Query Terms appears in: 1921 sections
+***Speed no vocab***
+presidentExecuteNoVocab: 2.824758000000004 presidentPlanningNoVocab: 0.19480599999999995
+***Speed vocab INT***
+presidentExecuteVocabIntFetchId: 0.028530000000000014 presidentPlanningVocabIntFetchId: 0.21091799999999963
+presidentExecuteVocabIntSearch: 2.780006 presidentPlanningvocabIntSearch: 0.17321800000000012
+***Speed vocab BigInt***
+presidentExecuteVocabBigIntFetchId: 0.027017999999999792 presidentPlanningvocabBigIntFetchId: 0.20898799999999954
+presidentExecuteVocabBigIntSearch: 2.6743499999999996 presidentPlanningvocabBigIntSearch: 0.1742100000000004
+QUERY SPEED:
+queryterm: ['government']
+Query Terms appears in: 2136 sections
+***Speed no vocab***
+governmentExecuteNoVocab: 3.2256419999999992 governmentPlanningNoVocab: 0.19656399999999918
+***Speed vocab INT***
+governmentExecuteVocabIntFetchId: 0.028955999999999968 governmentPlanningVocabIntFetchId: 0.22013599999999928
+governmentExecuteVocabIntSearch: 3.262855999999997 governmentPlanningvocabIntSearch: 0.1882920000000005
+***Speed vocab BigInt***
+governmentExecuteVocabBigIntFetchId: 0.03084200000000011 governmentPlanningvocabBigIntFetchId: 0.21701399999999968
+governmentExecuteVocabBigIntSearch: 3.416761999999999 governmentPlanningvocabBigIntSearch: 0.19157999999999994
+******** 0.1 of the dataset ********
+succefully created tables!
+time: 97.53862714767456
+ENTRIES:
+TotalTerms: 4021449
+VocabularyEntries: 125865
+MEMORY SIZE:
+oid, table_schema, table_name, row_estimate, total_bytes, index_bytes, toast_bytes, table_bytes, total, index, toast, table
+(21029, 'public', 'fullterm', 4021449.0, 277897216, 101728256, 8192, 176160768, '265 MB', '97 MB', '8192 bytes', '168 MB')
+(21064, 'public', 'termsec_big', 4021449.0, 268623872, 90472448, None, 178151424, '256 MB', '86 MB', None, '170 MB')
+(21061, 'public', 'termsec', 4021449.0, 236314624, 90472448, None, 145842176, '225 MB', '86 MB', None, '139 MB')
+(21050, 'public', 'vocab_big', 125865.0, 16703488, 10600448, 8192, 6094848, '16 MB', '10 MB', '8192 bytes', '5952 kB')
+(21037, 'public', 'vocab', 125865.0, 16269312, 10600448, 8192, 5660672, '16 MB', '10 MB', '8192 bytes', '5528 kB')
+QUERY SPEED:
+queryterm: ['much']
+Query Terms appears in: 4640 sections
+***Speed no vocab***
+muchExecuteNoVocab: 5.675964 muchPlanningNoVocab: 0.20056599999999966
+***Speed vocab INT***
+muchExecuteVocabIntFetchId: 0.026017999999999954 muchPlanningVocabIntFetchId: 0.21938199999999955
+muchExecuteVocabIntSearch: 5.929918000000007 muchPlanningvocabIntSearch: 0.1861640000000004
+***Speed vocab BigInt***
+muchExecuteVocabBigIntFetchId: 0.025969999999999972 muchPlanningvocabBigIntFetchId: 0.2090699999999995
+muchExecuteVocabBigIntSearch: 5.837097999999996 muchPlanningvocabBigIntSearch: 0.18788000000000052
+QUERY SPEED:
+queryterm: ['trump']
+Query Terms appears in: 3134 sections
+***Speed no vocab***
+trumpExecuteNoVocab: 4.380392000000002 trumpPlanningNoVocab: 0.2495379999999998
+***Speed vocab INT***
+trumpExecuteVocabIntFetchId: 0.025724000000000014 trumpPlanningVocabIntFetchId: 0.22014399999999962
+trumpExecuteVocabIntSearch: 4.200779999999998 trumpPlanningvocabIntSearch: 0.18833200000000042
+***Speed vocab BigInt***
+trumpExecuteVocabBigIntFetchId: 0.030161999999999835 trumpPlanningvocabBigIntFetchId: 0.2154539999999996
+trumpExecuteVocabBigIntSearch: 4.107104 trumpPlanningvocabBigIntSearch: 0.1974279999999996
+QUERY SPEED:
+queryterm: ['president']
+Query Terms appears in: 3967 sections
+***Speed no vocab***
+presidentExecuteNoVocab: 5.229639999999998 presidentPlanningNoVocab: 0.2485899999999999
+***Speed vocab INT***
+presidentExecuteVocabIntFetchId: 0.0343580000000001 presidentPlanningVocabIntFetchId: 0.2211199999999995
+presidentExecuteVocabIntSearch: 5.379784000000003 presidentPlanningvocabIntSearch: 0.19144599999999978
+***Speed vocab BigInt***
+presidentExecuteVocabBigIntFetchId: 0.035120000000000075 presidentPlanningvocabBigIntFetchId: 0.22122399999999937
+presidentExecuteVocabBigIntSearch: 4.886257999999998 presidentPlanningvocabBigIntSearch: 0.19767999999999938
+QUERY SPEED:
+queryterm: ['government']
+Query Terms appears in: 4190 sections
+***Speed no vocab***
+governmentExecuteNoVocab: 5.900039999999995 governmentPlanningNoVocab: 0.256896
+***Speed vocab INT***
+governmentExecuteVocabIntFetchId: 0.0282339999999999 governmentPlanningVocabIntFetchId: 0.2210679999999994
+governmentExecuteVocabIntSearch: 5.418144000000003 governmentPlanningvocabIntSearch: 0.1919139999999994
+***Speed vocab BigInt***
+governmentExecuteVocabBigIntFetchId: 0.027367999999999826 governmentPlanningvocabBigIntFetchId: 0.21685999999999958
+governmentExecuteVocabBigIntSearch: 5.6860560000000016 governmentPlanningvocabBigIntSearch: 0.20031599999999927
+******** 0.5 of the dataset ********
+succefully created tables!
+time: 506.106716632843
+ENTRIES:
+TotalTerms: 20124602
+VocabularyEntries: 267321
+MEMORY SIZE:
+oid, table_schema, table_name, row_estimate, total_bytes, index_bytes, toast_bytes, table_bytes, total, index, toast, table
+(21073, 'public', 'fullterm', 20124602.0, 1390444544, 509034496, 8192, 881401856, '1326 MB', '485 MB', '8192 bytes', '841 MB')
+(21108, 'public', 'termsec_big', 20124602.0, 1344102400, 452689920, None, 891412480, '1282 MB', '432 MB', None, '850 MB')
+(21105, 'public', 'termsec', 20124602.0, 1182384128, 452689920, None, 729694208, '1128 MB', '432 MB', None, '696 MB')
+(21094, 'public', 'vocab_big', 267321.0, 35487744, 22585344, 8192, 12894208, '34 MB', '22 MB', '8192 bytes', '12 MB')
+(21081, 'public', 'vocab', 267321.0, 34586624, 22585344, 8192, 11993088, '33 MB', '22 MB', '8192 bytes', '11 MB')
+QUERY SPEED:
+queryterm: ['much']
+Query Terms appears in: 23447 sections
+***Speed no vocab***
+muchExecuteNoVocab: 59.57093399999997 muchPlanningNoVocab: 0.2855440000000003
+***Speed vocab INT***
+muchExecuteVocabIntFetchId: 0.023807999999999795 muchPlanningVocabIntFetchId: 0.21123599999999956
+muchExecuteVocabIntSearch: 83.40279799999996 muchPlanningvocabIntSearch: 0.3149619999999997
+***Speed vocab BigInt***
+muchExecuteVocabBigIntFetchId: 0.026233999999999837 muchPlanningvocabBigIntFetchId: 0.2214159999999997
+muchExecuteVocabBigIntSearch: 83.180606 muchPlanningvocabBigIntSearch: 0.3184899999999998
+QUERY SPEED:
+queryterm: ['trump']
+Query Terms appears in: 15916 sections
+***Speed no vocab***
+trumpExecuteNoVocab: 15.130734000000013 trumpPlanningNoVocab: 0.28124600000000033
+***Speed vocab INT***
+trumpExecuteVocabIntFetchId: 0.02757599999999984 trumpPlanningVocabIntFetchId: 0.22842399999999943
+trumpExecuteVocabIntSearch: 14.994985999999997 trumpPlanningvocabIntSearch: 0.19594399999999956
+***Speed vocab BigInt***
+trumpExecuteVocabBigIntFetchId: 0.02751599999999989 trumpPlanningvocabBigIntFetchId: 0.2054619999999994
+trumpExecuteVocabBigIntSearch: 14.996380000000011 trumpPlanningvocabBigIntSearch: 0.1979559999999995
+QUERY SPEED:
+queryterm: ['president']
+Query Terms appears in: 19840 sections
+***Speed no vocab***
+presidentExecuteNoVocab: 73.62359400000004 presidentPlanningNoVocab: 0.3651219999999998
+***Speed vocab INT***
+presidentExecuteVocabIntFetchId: 0.02621399999999979 presidentPlanningVocabIntFetchId: 0.2215479999999993
+presidentExecuteVocabIntSearch: 72.87785199999998 presidentPlanningvocabIntSearch: 0.3048680000000007
+***Speed vocab BigInt***
+presidentExecuteVocabBigIntFetchId: 0.027073999999999765 presidentPlanningvocabBigIntFetchId: 0.21590799999999957
+presidentExecuteVocabBigIntSearch: 73.20730600000005 presidentPlanningvocabBigIntSearch: 0.3068820000000001
+QUERY SPEED:
+queryterm: ['government']
+Query Terms appears in: 21361 sections
+***Speed no vocab***
+governmentExecuteNoVocab: 76.86416999999999 governmentPlanningNoVocab: 0.37317
+***Speed vocab INT***
+governmentExecuteVocabIntFetchId: 0.022873999999999884 governmentPlanningVocabIntFetchId: 0.21751999999999982
+governmentExecuteVocabIntSearch: 77.20972800000004 governmentPlanningvocabIntSearch: 0.30522000000000066
+***Speed vocab BigInt***
+governmentExecuteVocabBigIntFetchId: 0.022298000000000026 governmentPlanningvocabBigIntFetchId: 0.20909799999999962
+governmentExecuteVocabBigIntSearch: 77.32693799999997 governmentPlanningvocabBigIntSearch: 0.3066439999999999
+******** 1.0 of the dataset ********
+succefully created tables!
+time: 1039.6317138671875
+ENTRIES:
+TotalTerms: 40194254
+VocabularyEntries: 368710
+MEMORY SIZE:
+oid, table_schema, table_name, row_estimate, total_bytes, index_bytes, toast_bytes, table_bytes, total, index, toast, table
+(21118, 'public', 'fullterm', 40194256.0, 2776965120, 1016569856, 8192, 1760387072, '2648 MB', '969 MB', '8192 bytes', '1679 MB')
+(21153, 'public', 'termsec_big', 40194256.0, 2684485632, 904118272, None, 1780367360, '2560 MB', '862 MB', None, '1698 MB')
+(21150, 'public', 'termsec', 40194256.0, 2361499648, 904118272, None, 1457381376, '2252 MB', '862 MB', None, '1390 MB')
+(21139, 'public', 'vocab_big', 368710.0, 49160192, 31334400, 8192, 17817600, '47 MB', '30 MB', '8192 bytes', '17 MB')
+(21126, 'public', 'vocab', 368710.0, 47906816, 31334400, 8192, 16564224, '46 MB', '30 MB', '8192 bytes', '16 MB')
+QUERY SPEED:
+queryterm: ['much']
+Query Terms appears in: 47028 sections
+***Speed no vocab***
+muchExecuteNoVocab: 105.63995799999996 muchPlanningNoVocab: 0.33787399999999906
+***Speed vocab INT***
+muchExecuteVocabIntFetchId: 0.024557999999999924 muchPlanningVocabIntFetchId: 0.20949399999999968
+muchExecuteVocabIntSearch: 158.72533399999983 muchPlanningvocabIntSearch: 0.32597999999999944
+***Speed vocab BigInt***
+muchExecuteVocabBigIntFetchId: 0.02470999999999996 muchPlanningvocabBigIntFetchId: 0.21657199999999976
+muchExecuteVocabBigIntSearch: 158.91074800000007 muchPlanningvocabBigIntSearch: 0.3292239999999995
+QUERY SPEED:
+queryterm: ['trump']
+Query Terms appears in: 31657 sections
+***Speed no vocab***
+trumpExecuteNoVocab: 110.18915000000008 trumpPlanningNoVocab: 0.4117799999999999
+***Speed vocab INT***
+trumpExecuteVocabIntFetchId: 0.025034000000000108 trumpPlanningVocabIntFetchId: 0.2146099999999996
+trumpExecuteVocabIntSearch: 107.6780800000001 trumpPlanningvocabIntSearch: 0.3239980000000001
+***Speed vocab BigInt***
+trumpExecuteVocabBigIntFetchId: 0.028164000000000033 trumpPlanningvocabBigIntFetchId: 0.22864799999999955
+trumpExecuteVocabBigIntSearch: 108.63684200000009 trumpPlanningvocabBigIntSearch: 0.33289399999999947
+QUERY SPEED:
+queryterm: ['president']
+Query Terms appears in: 39583 sections
+***Speed no vocab***
+presidentExecuteNoVocab: 131.21250400000008 presidentPlanningNoVocab: 0.41452800000000006
+***Speed vocab INT***
+presidentExecuteVocabIntFetchId: 0.031682000000000016 presidentPlanningVocabIntFetchId: 0.2367539999999996
+presidentExecuteVocabIntSearch: 129.4100879999999 presidentPlanningvocabIntSearch: 0.3332679999999999
+***Speed vocab BigInt***
+presidentExecuteVocabBigIntFetchId: 0.02829000000000002 presidentPlanningvocabBigIntFetchId: 0.21946999999999964
+presidentExecuteVocabBigIntSearch: 139.41770600000004 presidentPlanningvocabBigIntSearch: 0.3363759999999995
+QUERY SPEED:
+queryterm: ['government']
+Query Terms appears in: 42513 sections
+***Speed no vocab***
+governmentExecuteNoVocab: 147.20758200000017 governmentPlanningNoVocab: 0.414232
+***Speed vocab INT***
+governmentExecuteVocabIntFetchId: 0.023591999999999842 governmentPlanningVocabIntFetchId: 0.22663599999999953
+governmentExecuteVocabIntSearch: 149.30760400000003 governmentPlanningvocabIntSearch: 0.3350779999999996
+***Speed vocab BigInt***
+governmentExecuteVocabBigIntFetchId: 0.023073999999999966 governmentPlanningvocabBigIntFetchId: 0.21790999999999955
+governmentExecuteVocabBigIntSearch: 150.01504800000012 governmentPlanningvocabBigIntSearch: 0.33736399999999944

@@ -1,0 +1,30 @@
+**** Hash Partitioning *****
+
+alter table Section rename to Section_old;
+
+CREATE TABLE Section ( 
+    Id Integer PRIMARY KEY, 
+    DocID INTEGER,
+    Terms INTEGER[],
+    Stems INTEGER[],
+    Offsets jsonb,
+    Frequencies INTEGER[],
+    NumWords INTEGER,
+    Weight REAL) partition by HASH (Id);
+
+CREATE OR REPLACE FUNCTION create_parts(parts integer) RETURNS INTEGER AS $$
+DECLARE
+  i RECORD;
+BEGIN
+  FOR i IN 1..parts LOOP
+    EXECUTE 'CREATE TABLE Section_part'  || i || ' PARTITION OF Section FOR VALUES WITH (MODULUS ' || parts || ', REMAINDER ' || (i-1) || ');';
+  END LOOP;
+  RETURN 1;
+  END;
+$$ LANGUAGE plpgsql;
+
+select create_parts(4);
+
+INSERT INTO Section(Id, DocID, Terms, Stems, Offsets, Frequencies, NumWords, Weight)
+    SELECT * FROM Section_old;
+

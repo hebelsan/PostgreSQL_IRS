@@ -1,0 +1,135 @@
+**** Range Partitioning *****
+
+Max(StemID) = 46289151
+Part1: 11572288
+Part2: 23144576
+Part3: 34716864
+Part4: 46289152
+
+alter table SectionTerm rename to SectionTerm_old;
+
+create table SectionTerm(
+    SectionId INTEGER,
+    VocabID INTEGER,
+    StemID INTEGER,
+    Offsets INTEGER[]
+) partition by range (StemID);
+
+CREATE TABLE SectionTerm_part1 PARTITION OF SectionTerm
+    FOR VALUES FROM (0) TO (11572288);
+
+CREATE TABLE SectionTerm_part2 PARTITION OF SectionTerm
+    FOR VALUES FROM (11572288) TO (23144576);
+
+CREATE TABLE SectionTerm_part3 PARTITION OF SectionTerm
+    FOR VALUES FROM (23144576) TO (34716864);
+
+CREATE TABLE SectionTerm_part4 PARTITION OF SectionTerm
+    FOR VALUES FROM (34716864) TO (46289152);
+
+INSERT INTO SectionTerm(SectionId, VocabID, StemID, Offsets)
+    SELECT * FROM SectionTerm_old;
+
+
+FAIL:
+(1466662, 'public', 'sectionterm_part1', 45733408.0, 4004134912, 0, 425984, 4003708928, '3819 MB', '0 bytes', '416 kB', '3818 MB')
+(1466669, 'public', 'sectionterm_part2', 155652.0, 11108352, 0, 8192, 11100160, '11 MB', '0 bytes', '8192 bytes', '11 MB')
+(1466675, 'public', 'sectionterm_part3', 77350.0, 5545984, 0, 8192, 5537792, '5416 kB', '0 bytes', '8192 bytes', '5408 kB')
+(1466772, 'public', 'sectionterm_part4', 52248.0, 3751936, 0, 8192, 3743744, '3664 kB', '0 bytes', '8192 bytes', '3656 kB')
+
+
+Max(StemID) = 46289151
+Part1: 11572288
+Part2: 23144576
+Part3: 34716864
+Part4: 46289152
+
+
+**** Hash Partitioning *****
+
+alter table SectionTerm rename to SectionTerm_old;
+
+create table SectionTerm(
+    SectionId INTEGER,
+    VocabID INTEGER,
+    StemID INTEGER,
+    Offsets INTEGER[]
+) partition by HASH (StemID);
+
+CREATE TABLE SectionTerm_part1 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 4, REMAINDER 0);
+
+CREATE TABLE SectionTerm_part2 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 4, REMAINDER 1);
+
+CREATE TABLE SectionTerm_part3 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 4, REMAINDER 2);
+
+CREATE TABLE SectionTerm_part4 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 4, REMAINDER 3);
+
+
+INSERT INTO SectionTerm(SectionId, VocabID, StemID, Offsets)
+    SELECT * FROM SectionTerm_old;
+
+
+Deutlich besser:
+(1466882, 'public', 'sectionterm_part2', 0.0, 842604544, 0, 81920, 842522624, '804 MB', '0 bytes', '80 kB', '803 MB')
+(1466888, 'public', 'sectionterm_part3', 0.0, 831938560, 0, 270336, 831668224, '793 MB', '0 bytes', '264 kB', '793 MB')
+(1466876, 'public', 'sectionterm_part1', 11496746.0, 823435264, 0, 98304, 823336960, '785 MB', '0 bytes', '96 kB', '785 MB')
+(1466894, 'public', 'sectionterm_part4', 0.0, 807632896, 0, 81920, 807550976, '770 MB', '0 bytes', '80 kB', '770 MB')
+
+
+CREATE TABLE SectionTerm_part1 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 8, REMAINDER 0);
+CREATE TABLE SectionTerm_part2 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 8, REMAINDER 1);
+CREATE TABLE SectionTerm_part3 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 8, REMAINDER 2);
+CREATE TABLE SectionTerm_part4 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 8, REMAINDER 3);
+CREATE TABLE SectionTerm_part5 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 8, REMAINDER 4);
+CREATE TABLE SectionTerm_part6 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 8, REMAINDER 5);
+CREATE TABLE SectionTerm_part7 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 8, REMAINDER 6);
+CREATE TABLE SectionTerm_part8 PARTITION OF SectionTerm
+    FOR VALUES WITH (MODULUS 8, REMAINDER 7);
+
+INSERT INTO SectionTerm(SectionId, VocabID, StemID, Offsets)
+    SELECT * FROM SectionTerm_old;
+
+
+CREATE OR REPLACE FUNCTION create_parts(parts integer) RETURNS INTEGER AS $$
+DECLARE
+  i RECORD;
+BEGIN
+  FOR i IN 1..parts LOOP
+    EXECUTE 'CREATE TABLE SectionTerm_part'  || i || ' PARTITION OF SectionTerm FOR VALUES WITH (MODULUS ' || parts || ', REMAINDER ' || (i-1) || ');';
+  END LOOP;
+  RETURN 1;
+  END;
+$$ LANGUAGE plpgsql;
+
+
+INSERT INTO SectionTerm(SectionId, VocabID, StemID, Offsets)
+    SELECT * FROM SectionTerm_old;
+
+
+
+
+
+create table SectionTerm(
+    SectionId INTEGER,
+    VocabID INTEGER,
+    StemID INTEGER,
+    Offsets INTEGER[],
+    tf INTEGER
+) partition by HASH (StemID);
+
+select create_parts(32);
+
+INSERT INTO SectionTerm(SectionId, VocabID, StemID, Offsets, tf) 
+    SELECT SectionId, VocabId, StemId, Offsets, array_length(Offsets, 1) FROM SectionTerm_old;
+
